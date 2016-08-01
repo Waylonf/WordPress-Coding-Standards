@@ -11,6 +11,10 @@
  * @link      http://pear.php.net/package/PHP_CodeSniffer
  */
 
+if ( ! class_exists( 'Squiz_Sniffs_WhiteSpace_CastSpacingSniff', true ) ) {
+	throw new PHP_CodeSniffer_Exception( 'Class Squiz_Sniffs_WhiteSpace_CastSpacingSniff not found' );
+}
+
 /**
  * Squiz_Sniffs_WhiteSpace_CastSpacingSniff.
  *
@@ -24,18 +28,14 @@
  * @license   https://github.com/squizlabs/PHP_CodeSniffer/blob/master/licence.txt BSD Licence
  * @version   Release: @package_version@
  * @link      http://pear.php.net/package/PHP_CodeSniffer
+ *
+ * @since     0.xx.0 This sniff now extends the Squiz_Sniffs_WhiteSpace_CastSpacingSniff class it was based upon.
+ * @since     0.xx.0 This sniff now has the ability to fix the issues it flags.
+ *
+ * Last synced with parent class August 2016 at commit 5def2acbe3911e2aea08ac8b8eb4e4d64330021f.
+ * @link     https://github.com/squizlabs/PHP_CodeSniffer/blob/master/CodeSniffer/Standards/Squiz/Sniffs/WhiteSpace/CastSpacingSniff.php
  */
-class WordPress_Sniffs_WhiteSpace_CastStructureSpacingSniff implements PHP_CodeSniffer_Sniff {
-
-	/**
-	 * Returns an array of tokens this test wants to listen for.
-	 *
-	 * @return array
-	 */
-	public function register() {
-		return PHP_CodeSniffer_Tokens::$castTokens;
-
-	} // end register()
+class WordPress_Sniffs_WhiteSpace_CastStructureSpacingSniff extends Squiz_Sniffs_WhiteSpace_CastSpacingSniff {
 
 	/**
 	 * Processes this test, when one of its tokens is encountered.
@@ -47,37 +47,25 @@ class WordPress_Sniffs_WhiteSpace_CastStructureSpacingSniff implements PHP_CodeS
 	 * @return void
 	 */
 	public function process( PHP_CodeSniffer_File $phpcsFile, $stackPtr ) {
+		parent::process( $phpcsFile, $stackPtr );
+
 		$tokens = $phpcsFile->getTokens();
-
-		$content  = $tokens[ $stackPtr ]['content'];
-		$expected = str_replace( ' ', '', $content );
-		$expected = str_replace( "\t", '', $expected );
-
-		if ( $content !== $expected ) {
-			$error = 'Cast statements must not contain whitespace; expected "%s" but found "%s"';
-			$data  = array(
-				$expected,
-				$content,
-			);
-			$phpcsFile->addWarning( $error, $stackPtr, 'ContainsWhiteSpace', $data );
-		}
 
 		if ( T_WHITESPACE !== $tokens[ ( $stackPtr - 1 ) ]['code'] ) {
 			$error = 'No space before opening casting parenthesis is prohibited';
-			$phpcsFile->addWarning( $error, $stackPtr, 'NoSpaceBeforeOpenParenthesis' );
+			$fix   = $phpcsFile->addFixableWarning( $error, $stackPtr, 'NoSpaceBeforeOpenParenthesis' );
+			if ( true === $fix ) {
+				$phpcsFile->fixer->addContentBefore( $stackPtr, ' ' );
+			}
 		}
 
 		if ( T_WHITESPACE !== $tokens[ ( $stackPtr + 1 ) ]['code'] ) {
 			$error = 'No space after closing casting parenthesis is prohibited';
-			$phpcsFile->addWarning( $error, $stackPtr, 'NoSpaceAfterCloseParenthesis' );
+			$fix   = $phpcsFile->addFixableWarning( $error, $stackPtr, 'NoSpaceAfterCloseParenthesis' );
+			if ( true === $fix ) {
+				$phpcsFile->fixer->addContent( $stackPtr, ' ' );
+			}
 		}
-	} // end process()
-
-	/**
-	 * If true, an error will be thrown; otherwise a warning.
-	 *
-	 * @var bool
-	 */
-	public $error = false;
+	}
 
 } // end class
