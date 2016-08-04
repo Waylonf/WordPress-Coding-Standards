@@ -108,9 +108,11 @@ abstract class WordPress_AbstractArrayAssignmentRestrictionsSniff extends WordPr
 		if ( in_array( $token['code'], array( T_CLOSE_SQUARE_BRACKET, T_DOUBLE_ARROW ), true ) ) {
 			if ( T_CLOSE_SQUARE_BRACKET === $token['code']  ) {
 				$operator = $phpcsFile->findNext( array( T_EQUAL ), ( $stackPtr + 1 ) );
-			} elseif ( T_DOUBLE_ARROW === $token['code'] ) {
+			} else {
+				// T_DOUBLE_ARROW
 				$operator = $stackPtr;
 			}
+
 			$keyIdx = $phpcsFile->findPrevious( array( T_WHITESPACE, T_CLOSE_SQUARE_BRACKET ), ( $operator - 1 ), null, true );
 			if ( ! is_numeric( $tokens[ $keyIdx ]['content'] ) ) {
 				$key            = trim( $tokens[ $keyIdx ]['content'], '\'"' );

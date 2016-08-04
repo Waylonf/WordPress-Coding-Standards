@@ -59,7 +59,7 @@ class WordPress_Sniffs_Arrays_ArrayKeySpacingRestrictionsSniff implements PHP_Co
 		$spaced2 = ( T_WHITESPACE === $tokens[ ( $token['bracket_closer'] - 1 ) ]['code'] );
 
 		// It should have spaces only if it only has strings or numbers as the key.
-		if ( $need_spaces && ! ( $spaced1 && $spaced2 ) ) {
+		if ( false !== $need_spaces && ! ( $spaced1 && $spaced2 ) ) {
 			$error = 'Array keys must be surrounded by spaces unless they contain a string or an integer.';
 			$fix   = $phpcsFile->addFixableError( $error, $stackPtr, 'NoSpacesAroundArrayKeys' );
 			if ( true === $fix ) {
@@ -70,7 +70,7 @@ class WordPress_Sniffs_Arrays_ArrayKeySpacingRestrictionsSniff implements PHP_Co
 					$phpcsFile->fixer->addContentBefore( $token['bracket_closer'], ' ' );
 				}
 			}
-		} elseif ( ! $need_spaces && ( $spaced1 || $spaced2 ) ) {
+		} elseif ( false === $need_spaces && ( $spaced1 || $spaced2 ) ) {
 			$error = 'Array keys must NOT be surrounded by spaces if they only contain a string or an integer.';
 			$fix   = $phpcsFile->addFixableError( $error, $stackPtr, 'SpacesAroundArrayKeys' );
 			if ( true === $fix ) {

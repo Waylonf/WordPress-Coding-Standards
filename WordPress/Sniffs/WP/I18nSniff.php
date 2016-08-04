@@ -19,6 +19,16 @@
 class WordPress_Sniffs_WP_I18nSniff extends WordPress_Sniff {
 
 	/**
+	 * These Regexes copied from http://php.net/manual/en/function.sprintf.php#93552
+	 */
+	const SPRINTF_PLACEHOLDER_REGEX = '/(?:%%|(%(?:[0-9]+\$)?[+-]?(?:[ 0]|\'.)?-?[0-9]*(?:\.[0-9]+)?[bcdeufFos]))/';
+
+	/**
+	 * "Unordered" means there's no position specifier: '%s', not '%2$s'.
+	 */
+	const UNORDERED_SPRINTF_PLACEHOLDER_REGEX = '/(?:%%|(?:%[+-]?(?:[ 0]|\'.)?-?[0-9]*(?:\.[0-9]+)?[bcdeufFosxX]))/';
+
+	/**
 	 * Text domain.
 	 *
 	 * @todo Eventually this should be able to be auto-supplied via looking at $phpcs_file->getFilename()
@@ -35,7 +45,7 @@ class WordPress_Sniffs_WP_I18nSniff extends WordPress_Sniff {
 	 *
 	 * @var string
 	 */
-	static $text_domain_override;
+	public static $text_domain_override;
 
 	public $i18n_functions = array(
 		'translate'                      => 'simple',
@@ -55,16 +65,6 @@ class WordPress_Sniffs_WP_I18nSniff extends WordPress_Sniff {
 		'_n_noop'                        => 'noopnumber',
 		'_nx_noop'                       => 'noopnumber_context',
 	);
-
-	/**
-	 * These Regexes copied from http://php.net/manual/en/function.sprintf.php#93552
-	 */
-	static $sprintf_placeholder_regex = '/(?:%%|(%(?:[0-9]+\$)?[+-]?(?:[ 0]|\'.)?-?[0-9]*(?:\.[0-9]+)?[bcdeufFos]))/';
-
-	/**
-	 * "Unordered" means there's no position specifier: '%s', not '%2$s'.
-	 */
-	static $unordered_sprintf_placeholder_regex = '/(?:%%|(?:%[+-]?(?:[ 0]|\'.)?-?[0-9]*(?:\.[0-9]+)?[bcdeufFosxX]))/';
 
 	/**
 	 * Returns an array of tokens this test wants to listen for.
@@ -108,7 +108,7 @@ class WordPress_Sniffs_WP_I18nSniff extends WordPress_Sniff {
 		}
 
 		$func_open_paren_token = $phpcs_file->findNext( T_WHITESPACE, ( $stack_ptr + 1 ), null, true );
-		if ( ! $func_open_paren_token || T_OPEN_PARENTHESIS !== $tokens[ $func_open_paren_token ]['code'] ) {
+		if ( false === $func_open_paren_token || T_OPEN_PARENTHESIS !== $tokens[ $func_open_paren_token ]['code'] ) {
 			 return;
 		}
 
@@ -129,7 +129,7 @@ class WordPress_Sniffs_WP_I18nSniff extends WordPress_Sniff {
 			}
 
 			// Merge consecutive single or double quoted strings (when they span multiple lines).
-			if ( T_CONSTANT_ENCAPSED_STRING === $this_token['code'] || T_DOUBLE_QUOTED_STRING === $this_token['code'] ) {
+			if ( T_CONSTANT_ENCAPSED_STRING === $this_token['code'] || 'T_DOUBLE_QUOTED_STRING' === $this_token['type'] ) {
 				for ( $j = ( $i + 1 ); $j < $tokens[ $func_open_paren_token ]['parenthesis_closer']; $j += 1 ) {
 					if ( $this_token['code'] === $tokens[ $j ]['code'] ) {
 						$this_token['content'] .= $tokens[ $j ]['content'];
@@ -282,10 +282,10 @@ class WordPress_Sniffs_WP_I18nSniff extends WordPress_Sniff {
 		$single_content = $single_context['tokens'][0]['content'];
 		$plural_content = $plural_context['tokens'][0]['content'];
 
-		preg_match_all( self::$sprintf_placeholder_regex, $single_content, $single_placeholders );
+		preg_match_all( self::SPRINTF_PLACEHOLDER_REGEX, $single_content, $single_placeholders );
 		$single_placeholders = $single_placeholders[0];
 
-		preg_match_all( self::$sprintf_placeholder_regex, $plural_content, $plural_placeholders );
+		preg_match_all( self::SPRINTF_PLACEHOLDER_REGEX, $plural_content, $plural_placeholders );
 		$plural_placeholders = $plural_placeholders[0];
 
 		// English conflates "singular" with "only one", described in the codex:
@@ -320,7 +320,7 @@ class WordPress_Sniffs_WP_I18nSniff extends WordPress_Sniff {
 		$fixable_method = empty( $context['warning'] ) ? 'addFixableError' : 'addFixableWarning';
 
 		// UnorderedPlaceholders: Check for multiple unordered placeholders.
-		preg_match_all( self::$unordered_sprintf_placeholder_regex, $content, $unordered_matches );
+		preg_match_all( self::UNORDERED_SPRINTF_PLACEHOLDER_REGEX, $content, $unordered_matches );
 		$unordered_matches       = $unordered_matches[0];
 		$unordered_matches_count = count( $unordered_matches );
 
@@ -335,7 +335,7 @@ class WordPress_Sniffs_WP_I18nSniff extends WordPress_Sniff {
 			$fix = $phpcs_file->$fixable_method(
 				'Multiple placeholders should be ordered. Expected \'%s\', but got %s.',
 				$stack_ptr,
-				'UnorderedPlaceholders',
+				$code,
 				array( join( ', ', $suggestions ), join( ',', $unordered_matches ) )
 			);
 
@@ -352,7 +352,7 @@ class WordPress_Sniffs_WP_I18nSniff extends WordPress_Sniff {
 
 		// Strip placeholders and surrounding quotes.
 		$non_placeholder_content = trim( $content, "'" );
-		$non_placeholder_content = preg_replace( self::$sprintf_placeholder_regex, '', $non_placeholder_content );
+		$non_placeholder_content = preg_replace( self::SPRINTF_PLACEHOLDER_REGEX, '', $non_placeholder_content );
 
 		if ( empty( $non_placeholder_content ) ) {
 			$phpcs_file->addError( 'Strings should have translatable content', $stack_ptr, 'NoEmptyStrings' );
